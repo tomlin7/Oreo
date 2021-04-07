@@ -1,20 +1,17 @@
 import tkinter as tk
 import subprocess
 import queue
-import os
 from threading import Thread
 
 
 class Terminal(tk.Frame):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, font=None):
         tk.Frame.__init__(self, parent)
         self.parent = parent
-        self.createWidgets()
+        self.create_widgets(font)
 
-        # get the path to the console.py file assuming it is in the same folder
+        # get the path to the interactive.py file assuming it is in the same folder
         # consolePath = os.path.join(os.path.dirname(__file__),"interactive.py")
-        # open the console.py file (replace the path to python with the correct one for your system)
-        # e.g. it might be "C:\\Python35\\python"
         self.p = subprocess.Popen(["powershell"],
                                   stdout=subprocess.PIPE,
                                   stdin=subprocess.PIPE,
@@ -40,7 +37,7 @@ class Terminal(tk.Frame):
         self.writeLoop()
 
     def destroy(self):
-        "This is the function that is automatically called when the widget is destroyed."
+        """This is the function that is automatically called when the widget is destroyed."""
         self.alive = False
         # write exit() to the console in order to stop it running
         self.p.stdin.write("exit()\n".encode())
@@ -50,26 +47,26 @@ class Terminal(tk.Frame):
         tk.Frame.destroy(self)
 
     def enter(self, e):
-        "The <Return> key press handler"
+        """The <Return> key press handler"""
         string = self.ttyText.get(1.0, tk.END)[self.line_start:]
         self.line_start += len(string)
         self.p.stdin.write(string.encode())
         self.p.stdin.flush()
 
     def readFromProccessOut(self):
-        "To be executed in a separate thread to make read non-blocking"
+        """To be executed in a separate thread to make read non-blocking"""
         while self.alive:
             data = self.p.stdout.raw.read(1024).decode()
             self.outQueue.put(data)
 
     def readFromProccessErr(self):
-        "To be executed in a separate thread to make read non-blocking"
+        """To be executed in a separate thread to make read non-blocking"""
         while self.alive:
             data = self.p.stderr.raw.read(1024).decode()
             self.errQueue.put(data)
 
     def writeLoop(self):
-        "Used to write data from stdout and stderr to the Text widget"
+        """Used to write data from stdout and stderr to the Text widget"""
         # if there is anything to write from stdout or stderr, then write it
         if not self.errQueue.empty():
             self.write(self.errQueue.get())
@@ -85,8 +82,8 @@ class Terminal(tk.Frame):
         self.ttyText.see(tk.END)
         self.line_start += len(string)
 
-    def createWidgets(self):
-        self.ttyText = tk.Text(self, wrap=tk.WORD, height = 16)
+    def create_widgets(self, font):
+        self.ttyText = tk.Text(self, wrap=tk.WORD, height=16, font=font, fg="grey", padx=10, pady=10, bd=8)
         self.ttyText.pack(fill=tk.BOTH, expand=True)
 
 

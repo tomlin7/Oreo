@@ -10,7 +10,8 @@ pyglet.font.add_file('res/ext/fira.ttf')
 pyglet.font.add_file('res/ext/jbmono.ttf')
 
 icon = "./res/cookieide.ico"
-fira = ('Fira Sans', 8)
+fira_sans = ('Fira Sans', 8)
+jetbrains_mono = ('Fira Sans', 10)
 
 
 def show_about() -> None:
@@ -46,15 +47,15 @@ class CookieIDE:
         self._root = _root
         self._Width: int = 500
         self._Height: int = 700
-        self._TextArea: Text = Text(self._root)
+        self._TextArea: Text = Text(self._root, font=jetbrains_mono)
         self._ScrollBar: Scrollbar = Scrollbar(self._TextArea)
         self._file = None
 
         self._MenuBar: Menu = Menu(_root)
-        self._FileMenu: Menu = Menu(self._MenuBar, tearoff=0, font=fira)
-        self._EditMenu: Menu = Menu(self._MenuBar, tearoff=0, font=fira)
-        self._HelpMenu: Menu = Menu(self._MenuBar, tearoff=0, font=fira)
-        self._CommandMenu: Menu = Menu(self._MenuBar, tearoff=0, font=fira)
+        self._FileMenu: Menu = Menu(self._MenuBar, tearoff=0, font=fira_sans)
+        self._EditMenu: Menu = Menu(self._MenuBar, tearoff=0, font=fira_sans)
+        self._HelpMenu: Menu = Menu(self._MenuBar, tearoff=0, font=fira_sans)
+        self._CommandMenu: Menu = Menu(self._MenuBar, tearoff=0, font=fira_sans)
 
         try:
             self._Width = kwargs['width']
@@ -226,12 +227,15 @@ class CookieIDE:
 
 
 root = tk.Tk()
-billy_pad = CookieIDE(_root=root, width=1000, height=700)
+cookie_ide = CookieIDE(_root=root, width=1000, height=700)
 
-statusbar = tk.Label(root, text="status bar on development", bd=1, relief=tk.SUNKEN, anchor=tk.W)
-statusbar.pack(side=tk.BOTTOM, fill=tk.X)
+terminal = Terminal(root, jetbrains_mono)
+terminal.pack(fill=tk.BOTH, expand=False, side=tk.BOTTOM)
 
-main_window = Terminal(root)
-main_window.pack(fill=tk.BOTH, expand=False, side=tk.BOTTOM)
+statusbar_visible = tk.Button(text="test")
+statusbar_visible.pack(side=tk.LEFT, fill=tk.X, padx=5)
+
+statusbar = tk.Label(root, text="status bar on development", bd=1, relief=tk.FLAT, anchor=tk.W, padx=10)
+statusbar.pack(side=tk.RIGHT, fill=tk.X)
 
 root.mainloop()
