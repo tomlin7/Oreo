@@ -9,15 +9,13 @@ from tkinter.messagebox import *
 def show_about() -> None:
     """
     show the about popup
-    :return:
     """
-    showinfo("About BillyPad", "A sophisticated text editor.")
+    showinfo("About Cookie IDE", "Integrated Development Environment for Cookie.")
 
 
 def show_command() -> None:
     """
     show the documentation popup
-    :return:
     """
     # spacing is difficult
     showinfo("Documentation",
@@ -66,7 +64,6 @@ class BillyPad:
     def __init__(self, **kwargs):
         """
         initialize
-        :param kwargs:
         """
 
         # icon
@@ -160,7 +157,6 @@ class BillyPad:
     def quit_application(self) -> None:
         """
         exits the application.
-        :return:
         """
         self._root.destroy()
         # exit()
@@ -168,7 +164,6 @@ class BillyPad:
     def open_file(self) -> None:
         """
         opens an existing file.
-        :return:
         """
         self._file = askopenfilename(defaultextension=".txt",
                                      filetypes=[("All Files", "*.*"), ("Text Documents", "*.txt")])
@@ -187,7 +182,6 @@ class BillyPad:
     def new_file(self) -> None:
         """
         Creates a new file.
-        :return:
         """
         self._root.title("Untitled BillyPad")
         self._file = None
@@ -196,7 +190,6 @@ class BillyPad:
     def save_file(self) -> None:
         """
         saves current file.
-        :return:
         """
         # save as new file
         if self._file is None:
@@ -222,7 +215,6 @@ class BillyPad:
     def save_file_as(self) -> None:
         """
         saves file with given name
-        :return:
         """
         file = asksaveasfilename(initialfile="Untitled.txt",
                                  defaultextension=".txt",
@@ -238,28 +230,24 @@ class BillyPad:
     def cut(self) -> None:
         """
         cut the selected text
-        :return:
         """
         self._TextArea.event_generate("<<Cut>>")
 
     def copy(self) -> None:
         """
         copy the selected text
-        :return:
         """
         self._TextArea.event_generate("<<Copy>>")
 
     def paste(self) -> None:
         """
         paste text from clipboard
-        :return:
         """
         self._TextArea.event_generate("<<Paste>>")
 
     def run(self) -> None:
         """
         run the application loop
-        :return:
         """
         # Run main application
         self._root.mainloop()
@@ -269,3 +257,4 @@ class BillyPad:
 billy_pad = BillyPad(width=600, height=400)
 # calling run function
 billy_pad.run()
+
