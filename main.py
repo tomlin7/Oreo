@@ -196,9 +196,12 @@ class CookieIDE:
         """
         saves file with given name
         """
-        file = asksaveasfilename(initialfile="Untitled.txt",
-                                 defaultextension=".txt",
-                                 filetypes=[("All Files", "*.*"), ("Text Documents", "^.txt")])
+        file = asksaveasfilename(initialfile="main.cookie",
+                                 defaultextension=".cookie",
+                                 filetypes=[("All Files", "*.*"),
+                                            ("Cookie File", "*.cookie"),
+                                            ("C source files", "*.c"),
+                                            ("C header files", "*.h")])
         if file != "":
             _file = open(file, "w")
             _file.write(self._TextArea.get(1.0, END))
