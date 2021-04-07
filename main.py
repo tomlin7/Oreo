@@ -1,9 +1,16 @@
-"""
-main file
-"""
-# imports
+import tkinter as tk
 from tkinter.filedialog import *
 from tkinter.messagebox import *
+
+from terminal import Terminal
+
+import pyglet
+
+pyglet.font.add_file('res/ext/fira.ttf')
+pyglet.font.add_file('res/ext/jbmono.ttf')
+
+icon = "./res/cookieide.ico"
+fira = ('Fira Sans', 8)
 
 
 def show_about() -> None:
@@ -18,7 +25,7 @@ def show_command() -> None:
     show the documentation popup
     """
     # spacing is difficult
-    showinfo("Documentation",
+    showinfo("Help",
              "File\n"
              "-----\n"
              "New        - Creates a new file.\n"
@@ -34,67 +41,35 @@ def show_command() -> None:
              "Paste       - Paste text from clipboard.")
 
 
-class BillyPad:
-    """
-    main class
-    """
+class CookieIDE:
+    def __init__(self, _root, **kwargs):
+        self._root = _root
+        self._Width: int = 500
+        self._Height: int = 700
+        self._TextArea: Text = Text(self._root)
+        self._ScrollBar: Scrollbar = Scrollbar(self._TextArea)
+        self._file = None
 
-    _root: Tk = Tk()
+        self._MenuBar: Menu = Menu(_root)
+        self._FileMenu: Menu = Menu(self._MenuBar, tearoff=0, font=fira)
+        self._EditMenu: Menu = Menu(self._MenuBar, tearoff=0, font=fira)
+        self._HelpMenu: Menu = Menu(self._MenuBar, tearoff=0, font=fira)
+        self._CommandMenu: Menu = Menu(self._MenuBar, tearoff=0, font=fira)
 
-    _Width: int = 500
-
-    _Height: int = 700
-
-    _TextArea: Text = Text(_root)
-
-    _MenuBar: Menu = Menu(_root)
-
-    _FileMenu: Menu = Menu(_MenuBar, tearoff=0)
-
-    _EditMenu: Menu = Menu(_MenuBar, tearoff=0)
-
-    _HelpMenu: Menu = Menu(_MenuBar, tearoff=0)
-
-    _CommandMenu: Menu = Menu(_MenuBar, tearoff=0)
-
-    _ScrollBar: Scrollbar = Scrollbar(_TextArea)
-
-    _file = None
-
-    def __init__(self, **kwargs):
-        """
-        initialize
-        """
-
-        # icon
-        try:
-            self._root.wm_iconbitmap("./res/BillyPad.ico")
-        except FileNotFoundError:
-            # icon file not found.
-            print("icon file not found,"
-                  " maybe deleted or moved")
-            pass
-
-        # window size
         try:
             self._Width = kwargs['width']
             self._Height = kwargs['height']
         except KeyError:
-            # gave invalid inputs
             print("gave invalid window size values")
             pass
 
-        # window title
-        self._root.title("Untitled-BillyPad")
+        self._root.title("Untitled-CookieIDE")
+        self._root.wm_iconbitmap(icon)
 
         # Center the window
         screen_width = self._root.winfo_screenwidth()
         screen_height = self._root.winfo_screenheight()
-
-        # align left
         left = (screen_width / 2) - (self._Width / 2)
-
-        # align right
         top = (screen_height / 2) - (self._Height / 2)
 
         # top and bottom
@@ -105,7 +80,7 @@ class BillyPad:
         self._root.grid_columnconfigure(0, weight=1)
 
         # Add controls (widget)
-        self._TextArea.grid(sticky=N + E + S + W)
+        # self._TextArea.grid(sticky=N + E + S + W)
 
         # File Menu
 
@@ -138,7 +113,7 @@ class BillyPad:
         # Help Menu
 
         # Documentation
-        self._HelpMenu.add_command(label="Documentation", command=show_command)
+        self._HelpMenu.add_command(label="Help", command=show_command)
         # separator
         self._HelpMenu.add_separator()
         # about
@@ -153,6 +128,7 @@ class BillyPad:
         # adjust scrollbar according to the content
         self._ScrollBar.config(command=self._TextArea.yview)
         self._TextArea.config(yscrollcommand=self._ScrollBar.set)
+        self._TextArea.pack(fill=tk.BOTH, expand=True, side=tk.TOP)
 
     def quit_application(self) -> None:
         """
@@ -173,7 +149,7 @@ class BillyPad:
         else:
             # Try to open the file
             # set the window title
-            self._root.title(os.path.basename(self._file) + " - BillyPad")
+            self._root.title(os.path.basename(self._file) + " - CookieIDE")
             self._TextArea.delete(1.0, END)
             file = open(self._file, "r")
             self._TextArea.insert(1.0, file.read())
@@ -183,7 +159,7 @@ class BillyPad:
         """
         Creates a new file.
         """
-        self._root.title("Untitled BillyPad")
+        self._root.title("Untitled CookieIDE")
         self._file = None
         self._TextArea.delete(1.0, END)
 
@@ -194,9 +170,12 @@ class BillyPad:
         # save as new file
         if self._file is None:
             # Save as new file
-            self._file = asksaveasfilename(initialfile='Untitled.txt',
-                                           defaultextension=".txt",
-                                           filetypes=[("All Files", "*.*"), ("Text Documents", "*.txt")])
+            self._file = asksaveasfilename(initialfile='main.cookie',
+                                           defaultextension=".cookie",
+                                           filetypes=[("All Files", "*.*"),
+                                                      ("Cookie File", "*.cookie"),
+                                                      ("C source files", "*.c"),
+                                                      ("C header files", "*.h")])
             if self._file == "":
                 self._file = None
             else:
@@ -205,7 +184,7 @@ class BillyPad:
                 file.write(self._TextArea.get(1.0, END))
                 file.close()
                 # Change the window title
-                self._root.title(os.path.basename(self._file) + " - BillyPad")
+                self._root.title(os.path.basename(self._file) + " - CookieIDE")
         # overwrite existing
         else:
             file = open(self._file, "w")
@@ -225,7 +204,7 @@ class BillyPad:
             _file.close()
             self._file = file
             # Change the window title
-            self._root.title(os.path.basename(self._file) + " - BillyPad")
+            self._root.title(os.path.basename(self._file) + " - CookieIDE")
 
     def cut(self) -> None:
         """
@@ -245,16 +224,14 @@ class BillyPad:
         """
         self._TextArea.event_generate("<<Paste>>")
 
-    def run(self) -> None:
-        """
-        run the application loop
-        """
-        # Run main application
-        self._root.mainloop()
 
+root = tk.Tk()
+billy_pad = CookieIDE(_root=root, width=1000, height=700)
 
-# creating an instance
-billy_pad = BillyPad(width=600, height=400)
-# calling run function
-billy_pad.run()
+statusbar = tk.Label(root, text="status bar on development", bd=1, relief=tk.SUNKEN, anchor=tk.W)
+statusbar.pack(side=tk.BOTTOM, fill=tk.X)
 
+main_window = Terminal(root)
+main_window.pack(fill=tk.BOTH, expand=False, side=tk.BOTTOM)
+
+root.mainloop()

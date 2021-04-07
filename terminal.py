@@ -4,8 +4,9 @@ import queue
 import os
 from threading import Thread
 
-class Console(tk.Frame):
-    def __init__(self,parent=None):
+
+class Terminal(tk.Frame):
+    def __init__(self, parent=None):
         tk.Frame.__init__(self, parent)
         self.parent = parent
         self.createWidgets()
@@ -14,7 +15,7 @@ class Console(tk.Frame):
         # consolePath = os.path.join(os.path.dirname(__file__),"interactive.py")
         # open the console.py file (replace the path to python with the correct one for your system)
         # e.g. it might be "C:\\Python35\\python"
-        self.p = subprocess.Popen(["cmd"],
+        self.p = subprocess.Popen(["powershell"],
                                   stdout=subprocess.PIPE,
                                   stdin=subprocess.PIPE,
                                   stderr=subprocess.PIPE)
@@ -27,7 +28,7 @@ class Console(tk.Frame):
         self.line_start = 0
 
         # make the enter key call the self.enter function
-        self.ttyText.bind("<Return>",self.enter)
+        self.ttyText.bind("<Return>", self.enter)
 
         # a daemon to keep track of the threads so they can stop running
         self.alive = True
@@ -40,17 +41,18 @@ class Console(tk.Frame):
 
     def destroy(self):
         "This is the function that is automatically called when the widget is destroyed."
-        self.alive=False
+        self.alive = False
         # write exit() to the console in order to stop it running
         self.p.stdin.write("exit()\n".encode())
         self.p.stdin.flush()
         # call the destroy methods to properly destroy widgets
         self.ttyText.destroy()
         tk.Frame.destroy(self)
-    def enter(self,e):
+
+    def enter(self, e):
         "The <Return> key press handler"
         string = self.ttyText.get(1.0, tk.END)[self.line_start:]
-        self.line_start+=len(string)
+        self.line_start += len(string)
         self.p.stdin.write(string.encode())
         self.p.stdin.flush()
 
@@ -76,21 +78,21 @@ class Console(tk.Frame):
 
         # run this method again after 10ms
         if self.alive:
-            self.after(10,self.writeLoop)
+            self.after(10, self.writeLoop)
 
-    def write(self,string):
+    def write(self, string):
         self.ttyText.insert(tk.END, string)
         self.ttyText.see(tk.END)
-        self.line_start+=len(string)
+        self.line_start += len(string)
 
     def createWidgets(self):
-        self.ttyText = tk.Text(self, wrap=tk.WORD)
-        self.ttyText.pack(fill=tk.BOTH,expand=True)
+        self.ttyText = tk.Text(self, wrap=tk.WORD, height = 16)
+        self.ttyText.pack(fill=tk.BOTH, expand=True)
 
 
 if __name__ == '__main__':
     root = tk.Tk()
     root.config(background="red")
-    main_window = Console(root)
-    main_window.pack(fill=tk.BOTH,expand=True)
+    terminal = Terminal(root)
+    terminal.pack(fill=tk.BOTH, expand=True)
     root.mainloop()
