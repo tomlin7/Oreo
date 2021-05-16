@@ -1,21 +1,28 @@
 import tkinter as tk
 import subprocess
 import queue
+import os
 from threading import Thread
 
 
 class Terminal(tk.Frame):
-    def __init__(self, parent=None, font=None):
+    def __init__(self, parent=None, font="consolas", interactive=False):
         tk.Frame.__init__(self, parent)
         self.parent = parent
         self.create_widgets(font)
 
-        # get the path to the interactive.py file assuming it is in the same folder
-        # consolePath = os.path.join(os.path.dirname(__file__),"interactive.py")
-        self.p = subprocess.Popen(["powershell"],
-                                  stdout=subprocess.PIPE,
-                                  stdin=subprocess.PIPE,
-                                  stderr=subprocess.PIPE)
+        if interactive:
+            # get the path to the interactive.py file assuming it is in the same folder
+            consolePath = os.path.join(os.path.dirname(__file__),"interactive.py")
+            self.p = subprocess.Popen(["python", consolePath],
+                                        stdout=subprocess.PIPE,
+                                        stdin=subprocess.PIPE,
+                                        stderr=subprocess.PIPE)
+        else:
+            self.p = subprocess.Popen(["cmd"],
+                                        stdout=subprocess.PIPE,
+                                        stdin=subprocess.PIPE,
+                                        stderr=subprocess.PIPE)
 
         # make queues for keeping stdout and stderr whilst it is transferred between threads
         self.outQueue = queue.Queue()
@@ -85,11 +92,17 @@ class Terminal(tk.Frame):
     def create_widgets(self, font):
         self.ttyText = tk.Text(self, wrap=tk.WORD, height=16, font=font, fg="grey", padx=10, pady=10, bd=8)
         self.ttyText.pack(fill=tk.BOTH, expand=True)
+    
+    def automation(self, string):
+        self.ttyText.insert(tk.END, string)
+        self.ttyText.see(tk.END)
+        self.enter("test")
+        self.ttyText.insert(tk.END, "\n")
 
 
-if __name__ == '__main__':
-    root = tk.Tk()
-    root.config(background="red")
-    terminal = Terminal(root)
-    terminal.pack(fill=tk.BOTH, expand=True)
-    root.mainloop()
+# if __name__ == '__main__':
+#     root = tk.Tk()
+#     root.config(background="red")
+#     terminal = Terminal(root)
+#     terminal.pack(fill=tk.BOTH, expand=True)
+#     root.mainloop()

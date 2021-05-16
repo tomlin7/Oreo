@@ -5,13 +5,16 @@ from tkinter.messagebox import *
 from terminal import Terminal
 
 import pyglet
+import os
 
-pyglet.font.add_file('res/ext/fira.ttf')
+pyglet.font.add_file('res/ext/firasans.ttf')
+pyglet.font.add_file('res/ext/firacode.ttf')
 pyglet.font.add_file('res/ext/jbmono.ttf')
 
 icon = "./res/cookieide.ico"
-fira_sans = ('Fira Sans', 8)
-jetbrains_mono = ('Fira Sans', 10)
+fira_sans = ('Fira Sans', 10)
+fira_code = ('Fira Code', 11)
+jetbrains_mono = ('JetBrains Mono', 11)
 
 
 def show_about() -> None:
@@ -42,8 +45,9 @@ def show_command() -> None:
              "Paste       - Paste text from clipboard.")
 
 
-class CookieIDE:
-    def __init__(self, _root, **kwargs):
+class Oreo(tk.Frame):
+    def __init__(self, _root, *args, **kwargs):
+        tk.Frame.__init__(self, *args, **kwargs)
         self._root = _root
         self._Width: int = 500
         self._Height: int = 700
@@ -54,6 +58,7 @@ class CookieIDE:
         self._MenuBar: Menu = Menu(_root)
         self._FileMenu: Menu = Menu(self._MenuBar, tearoff=0, font=fira_sans)
         self._EditMenu: Menu = Menu(self._MenuBar, tearoff=0, font=fira_sans)
+        self._RunMenu: Menu = Menu(self._MenuBar, tearoff=0, font=fira_sans)
         self._HelpMenu: Menu = Menu(self._MenuBar, tearoff=0, font=fira_sans)
         self._CommandMenu: Menu = Menu(self._MenuBar, tearoff=0, font=fira_sans)
 
@@ -64,8 +69,8 @@ class CookieIDE:
             print("gave invalid window size values")
             pass
 
-        self._root.title("Untitled-CookieIDE")
-        self._root.wm_iconbitmap(icon)
+        self._root.title("Untitled - Oreo")
+        # self._root.wm_iconbitmap(icon)
 
         # Center the window
         screen_width = self._root.winfo_screenwidth()
@@ -111,6 +116,21 @@ class CookieIDE:
         # add menu
         self._MenuBar.add_cascade(label="Edit", menu=self._EditMenu)
 
+        # Run Menu
+
+        # build the open cookie.
+        self._RunMenu.add_command(label="Build", command=self.build)
+        # build and run the open cookie.
+        self._RunMenu.add_command(label="Build & Run", command=self.run)
+        # debug the open cookie.
+        self._RunMenu.add_command(label="Debug", command=self.debug)
+
+        self._RunMenu.add_separator()
+        
+        self._RunMenu.add_command(label="Start Interactive Session", command=self.interactive)
+        # add menu
+        self._MenuBar.add_cascade(label="Run", menu=self._RunMenu)
+
         # Help Menu
 
         # Documentation
@@ -150,7 +170,7 @@ class CookieIDE:
         else:
             # Try to open the file
             # set the window title
-            self._root.title(os.path.basename(self._file) + " - CookieIDE")
+            self._root.title(os.path.basename(self._file) + " - Oreo")
             self._TextArea.delete(1.0, END)
             file = open(self._file, "r")
             self._TextArea.insert(1.0, file.read())
@@ -160,7 +180,7 @@ class CookieIDE:
         """
         Creates a new file.
         """
-        self._root.title("Untitled CookieIDE")
+        self._root.title("Untitled - Oreo")
         self._file = None
         self._TextArea.delete(1.0, END)
 
@@ -185,7 +205,7 @@ class CookieIDE:
                 file.write(self._TextArea.get(1.0, END))
                 file.close()
                 # Change the window title
-                self._root.title(os.path.basename(self._file) + " - CookieIDE")
+                self._root.title(os.path.basename(self._file) + " - Oreo")
         # overwrite existing
         else:
             file = open(self._file, "w")
@@ -208,7 +228,7 @@ class CookieIDE:
             _file.close()
             self._file = file
             # Change the window title
-            self._root.title(os.path.basename(self._file) + " - CookieIDE")
+            self._root.title(os.path.basename(self._file) + " - Oreo")
 
     def cut(self) -> None:
         """
@@ -227,18 +247,65 @@ class CookieIDE:
         paste text from clipboard
         """
         self._TextArea.event_generate("<<Paste>>")
+    
+    def build(self):
+        if self._file is not None:
+            build_cmd = "{0}\\kookie.exe {1}".format(os.getcwd(), self._file)
+            terminal.automation("{0}".format(build_cmd))
+
+    def run(self):
+        if self._file is not None:
+            build_cmd = f"{os.getcwd()}\\kookie.exe {self._file}"
+            run_cmd = "{0}".format(str(self._file).replace(".cookie", ""))
+            terminal.automation("{0} && {1}".format(build_cmd, run_cmd))
+
+    def debug(self):
+        pass
+
+    def create_interactive_window(self):
+        t = tk.Toplevel(self)
+        t.wm_title("Kookie Interactive")
+        terminal = Terminal(t, fira_code, interactive=True)
+        terminal.pack(fill=tk.BOTH, expand=True, side=tk.TOP)
+
+    def interactive(self):
+        self.create_interactive_window()
+
+    def highlight_pattern(self, pattern, tag, start="1.0", end="end",
+                          regexp=False):
+        '''Apply the given tag to all text that matches the given pattern
+
+        If 'regexp' is set to True, pattern will be treated as a regular
+        expression according to Tcl's regular expression syntax.
+        '''
+
+        start = self.index(start)
+        end = self.index(end)
+        self.mark_set("matchStart", start)
+        self.mark_set("matchEnd", start)
+        self.mark_set("searchLimit", end)
+
+        count = tk.IntVar()
+        while True:
+            index = self.search(pattern, "matchEnd","searchLimit",
+                                count=count, regexp=regexp)
+            if index == "": break
+            if count.get() == 0: break # degenerate pattern which matches zero-length strings
+            self.mark_set("matchStart", index)
+            self.mark_set("matchEnd", "%s+%sc" % (index, count.get()))
+            self.tag_add(tag, "matchStart", "matchEnd")
 
 
 root = tk.Tk()
-cookie_ide = CookieIDE(_root=root, width=1000, height=700)
+oreo = Oreo(_root=root, width=1000, height=700)
 
-terminal = Terminal(root, jetbrains_mono)
+terminal = Terminal(root, fira_code)
 terminal.pack(fill=tk.BOTH, expand=False, side=tk.BOTTOM)
 
 statusbar_visible = tk.Button(text="test")
 statusbar_visible.pack(side=tk.LEFT, fill=tk.X, padx=5)
 
-statusbar = tk.Label(root, text="status bar on development", bd=1, relief=tk.FLAT, anchor=tk.W, padx=10)
+statusbar = tk.Label(root, text="status bar should be around here", bd=1, relief=tk.FLAT, anchor=tk.W, padx=10)
 statusbar.pack(side=tk.RIGHT, fill=tk.X)
 
 root.mainloop()
