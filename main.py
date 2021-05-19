@@ -129,7 +129,7 @@ class OreoEditor(tk.Frame):
             self._file = None
         else:
             self.change_window_name(self._file)
-            
+            self.clear_editor()
             with open(self._file, "r") as file:
                 self.editor.insert(1.0, file.read())
             
@@ -187,14 +187,16 @@ class OreoEditor(tk.Frame):
     
     def build(self, *args):
         if self._file is not None:
+            dir_cmd = "cd {0}".format(os.path.dirname(self._file))
             build_cmd = "{0}\\res\\exec\\kookie.exe {1}".format(os.getcwd(), self._file)
-            terminal.automation("{0}".format(build_cmd))
-
+            terminal.automation("{0} && {1}".format(dir_cmd, build_cmd))
+            
     def build_run(self, *args):
         if self._file is not None:
+            dir_cmd = "cd {0}".format(os.path.dirname(self._file))
             build_cmd = f"{os.getcwd()}\\res\\exec\\kookie.exe {self._file}"
             run_cmd = "{0}".format(str(self._file).replace(".cookie", ""))
-            terminal.automation("{0} && {1}".format(build_cmd, run_cmd))
+            terminal.automation("{0} && {1} && {2}".format(dir_cmd, build_cmd, run_cmd))
 
     def debug(self, *args):
         pass
