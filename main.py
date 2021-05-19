@@ -1,311 +1,425 @@
-import tkinter as tk
-from tkinter.filedialog import *
-from tkinter.messagebox import *
-
-from terminal import Terminal
-
 import pyglet
 import os
 
-pyglet.font.add_file('res/ext/firasans.ttf')
-pyglet.font.add_file('res/ext/firacode.ttf')
-pyglet.font.add_file('res/ext/jbmono.ttf')
+import tkinter as tk
+from tkinter import filedialog
 
-icon = "./res/cookieide.ico"
-fira_sans = ('Fira Sans', 10)
-fira_code = ('Fira Code', 11)
-jetbrains_mono = ('JetBrains Mono', 11)
+from utils.terminal import Terminal
+from utils.data import *
 
-
-def show_about() -> None:
-    """
-    show the about popup
-    """
-    showinfo("About Cookie IDE", "Integrated Development Environment for Cookie.")
-
-
-def show_command() -> None:
-    """
-    show the documentation popup
-    """
-    # spacing is difficult
-    showinfo("Help",
-             "File\n"
-             "-----\n"
-             "New        - Creates a new file.\n"
-             "Open      - Opens an existing file.\n"
-             "Save        - Saves the current file.\n"
-             "Save As   - Saves file as a new file.\n"
-             "Exit          - Quit the application\n"
-             "-----------------------------------\n"
-             "Edit\n"
-             "-----\n"
-             "Copy       - Copy selected text.\n"
-             "Cut          - Cut selected text.\n"
-             "Paste       - Paste text from clipboard.")
-
-
-class Oreo(tk.Frame):
+class OreoEditor(tk.Frame):
     def __init__(self, _root, *args, **kwargs):
         tk.Frame.__init__(self, *args, **kwargs)
-        self._root = _root
-        self._Width: int = 500
-        self._Height: int = 700
-        self._TextArea: Text = Text(self._root, font=jetbrains_mono)
-        self._ScrollBar: Scrollbar = Scrollbar(self._TextArea)
-        self._file = None
-
-        self._MenuBar: Menu = Menu(_root)
-        self._FileMenu: Menu = Menu(self._MenuBar, tearoff=0, font=fira_sans)
-        self._EditMenu: Menu = Menu(self._MenuBar, tearoff=0, font=fira_sans)
-        self._RunMenu: Menu = Menu(self._MenuBar, tearoff=0, font=fira_sans)
-        self._HelpMenu: Menu = Menu(self._MenuBar, tearoff=0, font=fira_sans)
-        self._CommandMenu: Menu = Menu(self._MenuBar, tearoff=0, font=fira_sans)
-
-        try:
-            self._Width = kwargs['width']
-            self._Height = kwargs['height']
-        except KeyError:
-            print("gave invalid window size values")
-            pass
-
-        self._root.title("Untitled - Oreo")
-        # self._root.wm_iconbitmap(icon)
-
-        # Center the window
-        screen_width = self._root.winfo_screenwidth()
-        screen_height = self._root.winfo_screenheight()
-        left = (screen_width / 2) - (self._Width / 2)
-        top = (screen_height / 2) - (self._Height / 2)
-
-        # top and bottom
-        self._root.geometry('%dx%d+%d+%d' % (self._Width, self._Height, left, top))
-
-        # auto resizable text area.
-        self._root.grid_rowconfigure(0, weight=1)
-        self._root.grid_columnconfigure(0, weight=1)
-
-        # Add controls (widget)
-        # self._TextArea.grid(sticky=N + E + S + W)
-
-        # File Menu
-
-        # open new file
-        self._FileMenu.add_command(label="New", command=self.new_file)
-        # open a already existing file
-        self._FileMenu.add_command(label="Open", command=self.open_file)
-        # save file
-        self._FileMenu.add_command(label="Save", command=self.save_file)
-        # save file
-        self._FileMenu.add_command(label="Save As...", command=self.save_file_as)
-        # separator
-        self._FileMenu.add_separator()
-        # quit the application
-        self._FileMenu.add_command(label="Exit", command=self.quit_application)
-        # add menu
-        self._MenuBar.add_cascade(label="File", menu=self._FileMenu)
-
-        # Edit Menu
-
-        # cut selected
-        self._EditMenu.add_command(label="Cut", command=self.cut)
-        # copy selected
-        self._EditMenu.add_command(label="Copy", command=self.copy)
-        # paste from clipboard
-        self._EditMenu.add_command(label="Paste", command=self.paste)
-        # add menu
-        self._MenuBar.add_cascade(label="Edit", menu=self._EditMenu)
-
-        # Run Menu
-
-        # build the open cookie.
-        self._RunMenu.add_command(label="Build", command=self.build)
-        # build and run the open cookie.
-        self._RunMenu.add_command(label="Build & Run", command=self.run)
-        # debug the open cookie.
-        self._RunMenu.add_command(label="Debug", command=self.debug)
-
-        self._RunMenu.add_separator()
         
-        self._RunMenu.add_command(label="Start Interactive Session", command=self.interactive)
-        # add menu
-        self._MenuBar.add_cascade(label="Run", menu=self._RunMenu)
+        # IDE setup
+        # ---
+        self._root      = _root
+        self._file      = None
+        # ---
 
-        # Help Menu
+        # Editor properties
+        # ---
+        self.line = 0
+        self.column = 0
+        # ---
 
-        # Documentation
-        self._HelpMenu.add_command(label="Help", command=show_command)
-        # separator
-        self._HelpMenu.add_separator()
-        # about
-        self._HelpMenu.add_command(label="About", command=show_about)
-        # add menu
-        self._MenuBar.add_cascade(label="Help", menu=self._HelpMenu)
+        # Editor setup
+        # + --- +
+        
+        self.editor  = tk.Text(self._root, font=jetbrains_mono)
+        
+        # scrollbar setup
+        # ---
+        self.editor_scrollbar = OreoScrollbar(self.editor)
+        self.editor_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.editor_scrollbar.save_pack_data(side=tk.RIGHT, fill=tk.Y)
+        self.editor_scrollbar.config(command=self.editor.yview, bd=0)
 
-        # add menubar
-        self._root.config(menu=self._MenuBar)
-        self._ScrollBar.pack(side=RIGHT, fill=Y)
+        self.editor.config(yscrollcommand=self.editor_scrollbar.set)
+        self.editor.pack(fill=tk.BOTH, expand=True, side=tk.TOP)
+        # ---
 
-        # adjust scrollbar according to the content
-        self._ScrollBar.config(command=self._TextArea.yview)
-        self._TextArea.config(yscrollcommand=self._ScrollBar.set)
-        self._TextArea.pack(fill=tk.BOTH, expand=True, side=tk.TOP)
+        # Bindings Setup
+        # ---
+        self.bind_shortcuts()
+        self.bind_key_release()
+        self.bind_button_release()
+        # ---
 
-    def quit_application(self) -> None:
-        """
-        exits the application.
-        """
-        self._root.destroy()
-        # exit()
+        # + --- +
+    
+    def bind_shortcuts(self):
+        # Bindings
+        # ---
+        self.editor.bind("<Control-n>", self.new_file)
+        self.editor.bind("<Control-o>", self.open_file)
+        self.editor.bind("<Control-s>", self.save_file)
+        self.editor.bind("<Control-S>", self.save_file_as)
 
-    def open_file(self) -> None:
-        """
-        opens an existing file.
-        """
-        self._file = askopenfilename(defaultextension=".txt",
-                                     filetypes=[("All Files", "*.*"), ("Text Documents", "*.txt")])
+        self.editor.bind("<Shift-F5>", self.build)
+        self.editor.bind("<F5>", self.build_run)
+        self.editor.bind("<Control-F5>", self.debug)
+        self.editor.bind("Control-I", self.interactive)
+        # ---
+    
+    def bind_key_release(self):
+        self.editor.bind('<KeyRelease>', self.key_release)
+
+    def bind_button_release(self):
+        self.editor.bind('<ButtonRelease>', self.button_release)
+    
+    def change_window_name(self, name):
+        self._root.title(os.path.basename(name) + " - Oreo")
+    
+    def clear_editor(self):
+        self.editor.delete(1.0, tk.END)
+
+    def get_all_code(self):
+        return self.editor.get(1.0, tk.END)
+    
+    def get_line_column_info(self):
+        self.line, self.column = self.editor.index(tk.INSERT).split('.')
+        return self.line, self.column
+
+    def create_interactive_window(self):
+        base = tk.Toplevel(self)
+        base.wm_title("Kookie Interactive")
+
+        # Auto resizable components.
+        # ---
+        base.grid_rowconfigure(0, weight=1)
+        base.grid_columnconfigure(0, weight=1)
+        # ---
+
+        terminal = Terminal(base, fira_code, interactive=True)
+        terminal.pack(fill=tk.BOTH, expand=True)
+
+    def button_release(self, *args):
+        self.update_line_column_info()
+    
+    def key_release(self, *args):
+        self.update_line_column_info()
+
+    def update_line_column_info(self):
+        self._root.statusbar.update_line_column_info()
+    
+    # Custom window
+    # ---
+    # def oreo_messagebox(self, title="Info", message="Info", font=fira_code):
+    #     msgbox = tk.Toplevel(self)
+    #     msgbox.wm_title(title)
+    #     text = tk.Label(msgbox, text=message, font=font)
+    #     text.pack(fill=tk.BOTH, expand=True, side=tk.TOP, anchor="w")
+    #     center(msgbox)
+    # ---
+
+    def generate_event(self, eventname):
+        self.editor.event_generate(eventname)
+
+    
+
+    def open_file(self, *args):
+        self._file = filedialog.askopenfilename(
+            defaultextension=".cookie",
+            filetypes=[
+                ("All Files", "*.*"), ("Cookie File", "*.cookie")
+            ]
+        )
         if self._file == "":
-            # no file to open
             self._file = None
         else:
-            # Try to open the file
-            # set the window title
-            self._root.title(os.path.basename(self._file) + " - Oreo")
-            self._TextArea.delete(1.0, END)
-            file = open(self._file, "r")
-            self._TextArea.insert(1.0, file.read())
-            file.close()
-
-    def new_file(self) -> None:
-        """
-        Creates a new file.
-        """
-        self._root.title("Untitled - Oreo")
+            self.change_window_name(self._file)
+            
+            with open(self._file, "r") as file:
+                self.editor.insert(1.0, file.read())
+            
+    def new_file(self, *args):
+        self.change_window_name("New Cookie")
         self._file = None
-        self._TextArea.delete(1.0, END)
+        self.clear_editor()
 
-    def save_file(self) -> None:
-        """
-        saves current file.
-        """
-        # save as new file
+    def save_file(self, *args):
         if self._file is None:
-            # Save as new file
-            self._file = asksaveasfilename(initialfile='main.cookie',
-                                           defaultextension=".cookie",
-                                           filetypes=[("All Files", "*.*"),
-                                                      ("Cookie File", "*.cookie"),
-                                                      ("C source files", "*.c"),
-                                                      ("C header files", "*.h")])
+            self._file = filedialog.asksaveasfilename(
+                initialfile='new.cookie',
+                defaultextension=".cookie",
+                filetypes=[
+                    ("All Files", "*.*"), ("Cookie File", "*.cookie")
+                ]
+            )
             if self._file == "":
                 self._file = None
             else:
-                # Try to save the file
-                file = open(self._file, "w")
-                file.write(self._TextArea.get(1.0, END))
-                file.close()
-                # Change the window title
-                self._root.title(os.path.basename(self._file) + " - Oreo")
-        # overwrite existing
+                with open(self._file, "w") as f:
+                    f.write(self.editor.get(1.0, END))
+                
+                self.change_window_name(self._file)
         else:
-            file = open(self._file, "w")
-            file.write(self._TextArea.get(1.0, END))
-            file.close()
+            with open(self._file, "w") as f:
+                f.write(self.get_all_code())
 
-    def save_file_as(self) -> None:
-        """
-        saves file with given name
-        """
-        file = asksaveasfilename(initialfile="main.cookie",
-                                 defaultextension=".cookie",
-                                 filetypes=[("All Files", "*.*"),
-                                            ("Cookie File", "*.cookie"),
-                                            ("C source files", "*.c"),
-                                            ("C header files", "*.h")])
-        if file != "":
-            _file = open(file, "w")
-            _file.write(self._TextArea.get(1.0, END))
-            _file.close()
-            self._file = file
-            # Change the window title
-            self._root.title(os.path.basename(self._file) + " - Oreo")
-
-    def cut(self) -> None:
-        """
-        cut the selected text
-        """
-        self._TextArea.event_generate("<<Cut>>")
-
-    def copy(self) -> None:
-        """
-        copy the selected text
-        """
-        self._TextArea.event_generate("<<Copy>>")
-
-    def paste(self) -> None:
-        """
-        paste text from clipboard
-        """
-        self._TextArea.event_generate("<<Paste>>")
+    def save_file_as(self, *args):
+        write_file = filedialog.asksaveasfilename(
+            initialfile=f"{self._file}_copy.cookie",
+            defaultextension=".cookie",
+            filetypes=[
+                ("All Files", "*.*"), ("Cookie File", "*.cookie")
+            ]
+        )
+        if write_file != "":
+            with open(file, "w") as f:
+                f.write(self.editor.get(1.0, END))
+            
+            self._file = write_file
+            self.change_window_name(self._file)
     
-    def build(self):
+    def quit_application(self):
+        self._root.destroy()
+    
+    def cut(self, *args):
+        self.editor.event_generate("<<Cut>>")
+
+    def copy(self, *args):
+        self.editor.event_generate("<<Copy>>")
+
+    def paste(self, *args):
+        self.editor.event_generate("<<Paste>>")
+    
+    def build(self, *args):
         if self._file is not None:
-            build_cmd = "{0}\\kookie.exe {1}".format(os.getcwd(), self._file)
+            build_cmd = "{0}\\res\\exec\\kookie.exe {1}".format(os.getcwd(), self._file)
             terminal.automation("{0}".format(build_cmd))
 
-    def run(self):
+    def build_run(self, *args):
         if self._file is not None:
-            build_cmd = f"{os.getcwd()}\\kookie.exe {self._file}"
+            build_cmd = f"{os.getcwd()}\\res\\exec\\kookie.exe {self._file}"
             run_cmd = "{0}".format(str(self._file).replace(".cookie", ""))
             terminal.automation("{0} && {1}".format(build_cmd, run_cmd))
 
-    def debug(self):
+    def debug(self, *args):
         pass
 
-    def create_interactive_window(self):
-        t = tk.Toplevel(self)
-        t.wm_title("Kookie Interactive")
-        terminal = Terminal(t, fira_code, interactive=True)
-        terminal.pack(fill=tk.BOTH, expand=True, side=tk.TOP)
-
-    def interactive(self):
+    def interactive(self, *args):
         self.create_interactive_window()
 
-    def highlight_pattern(self, pattern, tag, start="1.0", end="end",
-                          regexp=False):
-        '''Apply the given tag to all text that matches the given pattern
-
-        If 'regexp' is set to True, pattern will be treated as a regular
-        expression according to Tcl's regular expression syntax.
-        '''
-
-        start = self.index(start)
-        end = self.index(end)
-        self.mark_set("matchStart", start)
-        self.mark_set("matchEnd", start)
-        self.mark_set("searchLimit", end)
-
-        count = tk.IntVar()
-        while True:
-            index = self.search(pattern, "matchEnd","searchLimit",
-                                count=count, regexp=regexp)
-            if index == "": break
-            if count.get() == 0: break # degenerate pattern which matches zero-length strings
-            self.mark_set("matchStart", index)
-            self.mark_set("matchEnd", "%s+%sc" % (index, count.get()))
-            self.tag_add(tag, "matchStart", "matchEnd")
+    def show_about(self, *args):
+        showinfo("Oreo", "Integrated Development Environment for Kookie.")
 
 
-root = tk.Tk()
-oreo = Oreo(_root=root, width=1000, height=700)
+    def show_help(self, *args):
+        showinfo("Help", help_text)
+
+
+def center(win, width=100, height=100):
+    win.update_idletasks()
+
+    width = width
+    frm_width = win.winfo_rootx() - win.winfo_x()
+    win_width = width + 2 * frm_width
+
+    height = height
+    titlebar_height = win.winfo_rooty() - win.winfo_y()
+    win_height = height + titlebar_height + frm_width
+
+    x = win.winfo_screenwidth() // 2 - win_width // 2
+    y = win.winfo_screenheight() // 2 - win_height // 2
+    win.geometry('{}x{}+{}+{}'.format(width, height, x, y))
+    
+    win.deiconify()
+
+
+class OreoMenu(tk.Menu):
+    def __init__(self, _root, *args, **kwargs):
+        tk.Menu.__init__(self, _root, *args, **kwargs)
+
+        # Menu
+        # ---
+        self._root = _root
+
+        self.file_menu    = tk.Menu(self, tearoff=0, font=fira_sans)
+        self.edit_menu    = tk.Menu(self, tearoff=0, font=fira_sans)
+        self.run_menu     = tk.Menu(self, tearoff=0, font=fira_sans)
+        self.help_menu    = tk.Menu(self, tearoff=0, font=fira_sans)
+        # ---
+
+        # File Menu
+        # --- 
+        self.file_menu.add_command(label="New", command=self._root.editor.new_file)
+        self.file_menu.add_command(label="Open", command=self._root.editor.open_file)
+        self.file_menu.add_command(label="Save", command=self._root.editor.save_file)
+        self.file_menu.add_command(label="Save As...", command=self._root.editor.save_file_as)
+
+        self.file_menu.add_separator()
+        self.file_menu.add_command(label="Exit", command=self._root.editor.quit_application)
+
+        self.add_cascade(label="File", menu=self.file_menu)
+        # ---
+
+        # Edit Menu
+        # ---
+        self.edit_menu.add_command(label="Cut", command=self._root.editor.cut)
+        self.edit_menu.add_command(label="Copy", command=self._root.editor.copy)
+        self.edit_menu.add_command(label="Paste", command=self._root.editor.paste)
+        
+        self.add_cascade(label="Edit", menu=self.edit_menu)
+        # ---
+
+        # Run Menu
+        # ---
+        self.run_menu.add_command(label="Build", command=self._root.editor.build)
+        self.run_menu.add_command(label="Build & Run", command=self._root.editor.build_run)
+        self.run_menu.add_command(label="Debug", command=self._root.editor.debug)
+
+        self.run_menu.add_separator()
+        self.run_menu.add_command(label="Start Interactive Session", command=self._root.editor.interactive)
+
+        self.add_cascade(label="Run", menu=self.run_menu)
+        # ---
+
+        # Help Menu
+        # ---
+        self.help_menu.add_command(label="Help", command=self._root.editor.show_help)
+
+        self.help_menu.add_separator()
+        self.help_menu.add_command(label="About", command=self._root.editor.show_about)
+
+        self.add_cascade(label="Help", menu=self.help_menu)
+        # ---
+
+        self.setup()
+
+    def setup(self):
+        # add menubar
+        # ---
+        self._root.config(menu=self)
+        # ---
+
+
+class StatusBar(tk.Frame):
+    def __init__(self, _root, *args, **kwargs):
+        tk.Frame.__init__(self, _root, *args, **kwargs)
+        self._root = _root
+
+        self.terminal_config_button = tk.Menubutton(
+            self._root, text="terminal_config_button",
+            padx=10, bg="#007acc", fg="#ffffff",
+            activebackground="#1f8ad2", activeforeground="#ffffff"
+        )
+        self.drop = tk.Menu(
+            self.terminal_config_button, tearoff=False,
+            background='#ffffff', foreground='#616161',
+            activebackground='#0060c0', activeforeground='#ffffff'
+        )
+        self.drop.add_command(label="hide terminal", command=lambda: self.hide_terminal())
+        self.drop.add_command(label="show terminal", command=lambda: self.show_terminal())
+        self.terminal_config_button['menu'] = self.drop
+        self.terminal_config_button.pack(side=tk.LEFT, fill=tk.X, padx=13)
+
+        self.thing = tk.Menubutton(
+            self._root, text="test",
+            padx=10, bg="#007acc", fg="#ffffff",
+            activebackground="#1f8ad2", activeforeground="#ffffff"
+        )
+        self.thing.pack(side=tk.LEFT, fill=tk.X, padx=2)
+
+        self.line_column_info = tk.Menubutton(
+            self._root, text="Ln ?, Col ?", 
+            padx=10, bg="#007acc", fg="#ffffff",
+            activebackground="#1f8ad2", activeforeground="#ffffff"
+        )
+        self.line_column_info.pack(side=tk.RIGHT, fill=tk.X, padx=13)
+    
+    def update_line_column_info(self):
+        line, column = self._root.editor.get_line_column_info()
+        self.line_column_info.config(text=f"Ln {int(line)}, Col {int(column) + 1}")
+
+    def hide_terminal(self):
+        self._root.terminal.pack_forget()
+    
+
+    def show_terminal(self):
+        self._root.terminal.pack(fill=tk.BOTH, expand=True)
+        self.terminal_config_button.pack_forget()
+        self.thing.pack_forget()
+        self.line_column_info.pack_forget()
+
+        self.terminal_config_button.pack(side=tk.LEFT, fill=tk.X, padx=5)
+        self.thing.pack(side=tk.LEFT, fill=tk.X, padx=2)
+        self.line_column_info.pack(side=tk.RIGHT, fill=tk.X)
+
+
+class IDE(tk.Tk):
+    def __init__(self, *args, **kwargs):
+        super().__init__()
+
+        self.oreomenu = None
+        self.editor = None
+        self.terminal = None
+        self.statusbar = None
+
+        # IDE config
+        # ---
+        self.title("Untitled - Oreo")
+        self.wm_iconbitmap(icon)
+        self.configure(background="#007acc", bd=0)
+        # ---
+        
+        # Auto resizable components.
+        # ---
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+        # ---
+
+        try:
+            if kwargs['oreomenu'] != None:
+                self.editor = kwargs['oreomenu']
+            if kwargs['editor'] != None:
+                self.editor = kwargs['editor']
+            if kwargs['terminal'] != None:
+                self.terminal = kwargs['terminal']
+            if kwargs['statusbar'] != None:
+                self.statusbar = kwargs['statusbar']
+        except KeyError:
+            pass
+
+    def add_oreomenu(self, oreomenu):
+        self.oreomenu = oreomenu
+
+    def add_editor(self, editor):
+        self.editor = editor
+    
+    def add_terminal(self, terminal):
+        self.terminal = terminal
+    
+    def add_statusbar(self, statusbar):
+        self.statusbar = statusbar
+
+class OreoScrollbar(tk.Scrollbar):
+    def save_pack_data(self, *args, **kwargs):
+        self.pack_data = kwargs
+    def set(self, low, high):
+        if float(low) <= 0.0 and float(high) >= 1.0:
+            self.tk.call("pack", "forget", self)
+        else:
+            self.pack(self.pack_data)
+        tk.Scrollbar.set(self, low, high)
+
+
+root = IDE()
+center(root, width=1000, height=700)
+
+oreoeditor = OreoEditor(_root=root, background="#ffffff")
+root.add_editor(oreoeditor)
+
+oreomenu = OreoMenu(root, relief=tk.FLAT)
+root.add_oreomenu(oreomenu)
 
 terminal = Terminal(root, fira_code)
-terminal.pack(fill=tk.BOTH, expand=False, side=tk.BOTTOM)
+terminal.pack(fill=tk.BOTH, expand=True)
+root.add_terminal(terminal)
 
-statusbar_visible = tk.Button(text="test")
-statusbar_visible.pack(side=tk.LEFT, fill=tk.X, padx=5)
-
-statusbar = tk.Label(root, text="status bar should be around here", bd=1, relief=tk.FLAT, anchor=tk.W, padx=10)
-statusbar.pack(side=tk.RIGHT, fill=tk.X)
+statusbar = StatusBar(root, bg="#007acc")
+statusbar.pack(fill=tk.BOTH, side=tk.BOTTOM)
+root.add_statusbar(statusbar)
 
 root.mainloop()
