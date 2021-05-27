@@ -37,102 +37,99 @@ class Terminal(tk.Frame):
 
         # make queues for keeping stdout and stderr 
         # whilst it is transferred between threads.
-        self.outQueue = queue.Queue()
-        self.errQueue = queue.Queue()
+        self.out_queue = queue.Queue()
+        self.err_queue = queue.Queue()
 
         # keep track of where any line that is submitted starts
         self.line_start = 0
 
         # bind the enter key to self.enter
-        self.ttyText.bind("<Return>", self.enter)
+        self.terminal.bind("<Return>", self.enter)
 
         # daemon to keep track of the threads so they can stop running
         self.alive = True
 
         # start the functions that get stdout and stderr in separate threads
-        Thread(target=self.readFromProccessOut).start()
-        Thread(target=self.readFromProccessErr).start()
+        Thread(target=self.read_from_proccessOut).start()
+        Thread(target=self.read_from_proccessErr).start()
 
         # start the write loop in the main thread
-        self.writeLoop()
+        self.write_loop()
 
     def destroy(self):
-        """
-        This is the function that is automatically called when the widget is destroyed.
-        """
         self.alive = False
         # write exit() to the console in order to stop it running
         self.p.stdin.write("exit()\n".encode())
         self.p.stdin.flush()
         # call the destroy methods to properly destroy widgets
-        self.ttyText.destroy()
+        self.terminal.destroy()
         tk.Frame.destroy(self)
 
     def enter(self, e):
         """
         The <Return> key press handler
         """
-        string = self.ttyText.get(1.0, tk.END)[self.line_start:]
+        string = self.terminal.get(1.0, tk.END)[self.line_start:]
         self.line_start += len(string)
         self.p.stdin.write(string.encode())
         self.p.stdin.flush()
 
-    def readFromProccessOut(self):
+    def read_from_proccessOut(self):
         """
         To be executed in a separate thread to make read non-blocking
         """
         while self.alive:
-            data = self.p.stdout.raw.read(1024).decode()
-            self.outQueue.put(data)
+            data = self.p.stdout.raw.read(1024).decode('utf-8')
+            self.out_queue.put(data)
 
-    def readFromProccessErr(self):
+    def read_from_proccessErr(self):
         """
         To be executed in a separate thread to make read non-blocking
         """
         while self.alive:
-            data = self.p.stderr.raw.read(1024).decode()
-            self.errQueue.put(data)
+            data = self.p.stderr.raw.read(1024).decode('utf-8')
+            self.err_queue.put(data)
 
-    def writeLoop(self):
+    def write_loop(self):
         """
         write data from stdout and stderr to the Text widget
         """
         # if there is anything to write from stdout or stderr, then write it
-        if not self.errQueue.empty():
-            self.write(self.errQueue.get())
-        if not self.outQueue.empty():
-            self.write(self.outQueue.get())
+        if not self.err_queue.empty():
+            self.write(self.err_queue.get())
+        if not self.out_queue.empty():
+            self.write(self.out_queue.get())
 
         # run this method again after 10ms
         if self.alive:
-            self.after(10, self.writeLoop)
+            self.after(10, self.write_loop)
 
-    def write(self, string):
-        self.ttyText.insert(tk.END, string)
-        self.ttyText.see(tk.END)
-        self.line_start += len(string)
+    def write(self, output):
+        self.terminal.insert(tk.END, output.replace("\\u25ba", "►"))
+        self.terminal.see(tk.END)
+        self.line_start += len(output)
 
     def create_widgets(self, font):
-        self.ttyText = tk.Text(
+        self.terminal = tk.Text(
             self, wrap=tk.WORD, height=16, 
             font=font, fg="#494949", 
             padx=10, pady=10
         )
         
-        self.terminal_scrollbar = OreoScrollbar(self.ttyText)
+        self.terminal_scrollbar = OreoScrollbar(self.terminal)
 
         self.terminal_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         self.terminal_scrollbar.save_pack_data(side=tk.RIGHT, fill=tk.Y)
-        self.terminal_scrollbar.config(command=self.ttyText.yview)
+        self.terminal_scrollbar.config(command=self.terminal.yview)
 
-        self.ttyText.config(yscrollcommand=self.terminal_scrollbar.set)
-        self.ttyText.pack(fill=tk.BOTH, expand=True)
+        self.terminal.config(yscrollcommand=self.terminal_scrollbar.set)
+        self.terminal.pack(fill=tk.BOTH, expand=True)
     
     def automation(self, string):
-        self.ttyText.insert(tk.END, string)
-        self.ttyText.see(tk.END)
+        self.terminal.insert(tk.END, string)
+        self.terminal.see(tk.END)
         self.enter("test")
-        self.ttyText.insert(tk.END, "\n")
+        self.terminal.insert(tk.END, "\n")
 
 
 # Standalone

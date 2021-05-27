@@ -1,4 +1,19 @@
+import sys
+import tkinter
 import pyglet
+import platform
+
+oreo_version = "1.0.0"
+oreo_commit = "..."
+oreo_updatedate = "..."
+tk_version = tkinter.TkVersion
+
+python_version = "{0}.{1}.{2}".format(
+    sys.version_info.major,
+    sys.version_info.micro,
+    sys.version_info.minor
+)
+os_version = platform.platform()
 
 pyglet.font.add_file('res/fonts/firasans.ttf')
 pyglet.font.add_file('res/fonts/firacode.ttf')
@@ -9,6 +24,11 @@ icon = "./res/images/oreo.ico"
 fira_sans = ('Fira Sans', 10)
 fira_code = ('Fira Code', 11)
 jetbrains_mono = ('JetBrains Mono', 11)
+
+about_text = """
+Oreo 
+Integrated Development Environment for Kookie.
+"""
 
 help_text = """
 File
