@@ -28,7 +28,17 @@ jetbrains_mono = ('JetBrains Mono', 11)
 about_text = """
 Oreo 
 Integrated Development Environment for Kookie.
-"""
+
+Version: {0} (user setup)
+Commit: {1}
+Date: {2} (... weeks ago)
+Tk: {3}
+Python: {4}
+OS: {5}
+""".format(
+    oreo_version, oreo_commit, oreo_updatedate,
+    tk_version, python_version, os_version
+)
 
 help_text = """
 File
