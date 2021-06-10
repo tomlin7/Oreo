@@ -10,8 +10,8 @@ tk_version = tkinter.TkVersion
 
 python_version = "{0}.{1}.{2}".format(
     sys.version_info.major,
-    sys.version_info.micro,
-    sys.version_info.minor
+    sys.version_info.minor,
+    sys.version_info.micro
 )
 os_version = platform.platform()
 
