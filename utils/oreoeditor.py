@@ -87,6 +87,7 @@ class OreoEditor(tk.Frame):
     def create_interactive_window(self):
         base = tk.Toplevel(self)
         base.wm_title("Kookie Interactive")
+        base.wm_geometry("880x400")
 
         # Auto resizable components.
         # ---
