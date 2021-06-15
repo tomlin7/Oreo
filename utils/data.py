@@ -17,7 +17,7 @@ os_version = platform.platform()
 
 pyglet.font.add_file('res/fonts/firasans.ttf')
 pyglet.font.add_file('res/fonts/firacode.ttf')
-pyglet.font.add_file('res/fonts/jbmono.ttf')
+pyglet.font.add_file('res/fonts/jbmono/jbmono.ttf')
 
 icon = "./res/images/oreo.ico"
 
