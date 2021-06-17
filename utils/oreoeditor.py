@@ -5,8 +5,11 @@ from tkinter import filedialog
 from tkinter import messagebox
 
 from utils.data import *
+from utils.config import OreoConfig
 from utils.oreoscrollbar import OreoScrollbar
 from utils.terminal import Terminal
+from utils.oreotext import OreoText
+from utils.highlighter import Highlighter
 
 
 class OreoEditor(tk.Frame):
@@ -28,7 +31,9 @@ class OreoEditor(tk.Frame):
         # Editor setup
         # + --- +
         
-        self.editor  = tk.Text(self._root, font=jetbrains_mono)
+        self.editor  = OreoText(self._root, font=jetbrains_mono)
+        self.config = OreoConfig()
+        self.highlighter = Highlighter(self)
         
         # scrollbar setup
         # ---
@@ -102,6 +107,7 @@ class OreoEditor(tk.Frame):
         self.update_line_column_info()
     
     def key_release(self, *args):
+        self.highlighter.highlight_all()
         self.update_line_column_info()
 
     def update_line_column_info(self):
@@ -223,7 +229,6 @@ class OreoEditor(tk.Frame):
 
     def show_about(self, *args):
         messagebox.showinfo("Oreo", about_text)
-
 
     def show_help(self, *args):
         messagebox.showinfo("Help", help_text)
