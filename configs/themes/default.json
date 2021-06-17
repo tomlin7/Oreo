@@ -1,5 +1,16 @@
 {
     "name": "default",
+    
+    "syntax": {
+        "keyword": "#0000ff",
+        "name": "#000000",
+        "string": "#a31515",
+        "number": "#098658",
+        "punctuation": "#000000",
+        "operator": "#000000",
+        "comment": "#008000"
+    },
+
     "editor-bg": "#ffffff",
     "statusbar": "#007acc",
     
