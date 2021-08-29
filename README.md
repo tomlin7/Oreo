@@ -10,7 +10,7 @@
     <div>
         Fast Integrated Development Environment for <a href="https://github.com/kookielang/Kookie">Kookie</a>.
     </p>
-    <img src="res/images/banner.png" />
+    <!--<img src="res/images/banner.png" />-->
 </div>
 
 
